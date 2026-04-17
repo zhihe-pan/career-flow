@@ -47,7 +47,7 @@ export function KanbanColumn({ id, label, accent, cards, highlightedIds, dimmedI
         </AnimatePresence>
         {cards.length === 0 && (
           <div className="flex h-24 items-center justify-center rounded-2xl border border-dashed border-border/50 text-xs text-muted-foreground">
-            Drop here
+            拖拽卡片到此
           </div>
         )}
       </div>
