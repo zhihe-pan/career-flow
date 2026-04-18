@@ -1,7 +1,15 @@
-import { supabase } from "@/integrations/supabase/client";
+import { isSupabaseConfigured, supabase } from "@/integrations/supabase/client";
+
+function requireSupabase() {
+  if (!isSupabaseConfigured || !supabase) {
+    throw new Error("AI 功能尚未配置。公开演示站未设置 Supabase 环境变量。");
+  }
+  return supabase;
+}
 
 export async function aiParseJD(text: string) {
-  const { data, error } = await supabase.functions.invoke("ai-assist", {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke("ai-assist", {
     body: { mode: "parse_jd", text },
   });
   if (error) throw error;
@@ -22,7 +30,8 @@ export async function aiBuildRoadmap(job: {
   requirements?: string[];
   summary?: string;
 }) {
-  const { data, error } = await supabase.functions.invoke("ai-assist", {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke("ai-assist", {
     body: { mode: "roadmap", job },
   });
   if (error) throw error;
