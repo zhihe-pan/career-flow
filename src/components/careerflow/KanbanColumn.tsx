@@ -49,7 +49,7 @@ export function KanbanColumn({ id, label, accent, cards, highlightedIds, dimmedI
             录入新机会
           </button>
         )}
-        <AnimatePresence mode="popLayout">
+        <AnimatePresence initial={false}>
           {cards.map((c) => (
             <JobCardItem
               key={c.id}

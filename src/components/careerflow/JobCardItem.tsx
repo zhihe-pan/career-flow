@@ -48,7 +48,6 @@ export const JobCardItem = forwardRef<HTMLDivElement, Props>(
 
     return (
       <motion.div
-        layout
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96 }}
@@ -80,7 +79,6 @@ export const JobCardItem = forwardRef<HTMLDivElement, Props>(
               <p className="flex items-center gap-1.5 text-[11px] font-medium tracking-wider text-muted-foreground mb-1.5 min-w-0">
                 <span className="min-w-0 flex-1 truncate">{card.company}</span>
                 <motion.span
-                  layout
                   className={cn(
                     "shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors duration-300",
                     card.strategicTier

@@ -13,6 +13,17 @@ export function getNextInterviewIso(card: JobCard): string | undefined {
   return getNextPendingInterviewRound(card.interviewRounds)?.scheduledAt;
 }
 
+/**
+ * 看板「面试中」列排序用：越早的面试越小；无下一场时间或非法时间排最后。
+ * 与 `getNextInterviewIso` / 卡片倒计时徽章数据源一致。
+ */
+export function getInterviewingSortTimestamp(card: JobCard): number {
+  const iso = getNextInterviewIso(card);
+  if (!iso) return Number.POSITIVE_INFINITY;
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+}
+
 /** 备选池投递截止（兼容旧数据的 `deadline`） */
 export function getApplicationDeadlineIso(card: JobCard): string | undefined {
   return card.applicationDeadline ?? card.deadline;

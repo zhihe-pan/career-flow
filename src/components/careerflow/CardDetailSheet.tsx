@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,12 +7,28 @@ import { Label } from "@/components/ui/label";
 import { JobCard, RoadmapStep, STAGES } from "@/lib/types";
 import { aiBuildRoadmap } from "@/lib/ai";
 import { notify } from "@/lib/app-toast";
-import { Wand2, Loader2, FileText, Sparkles, CheckCircle2, Circle, Trash2, Calendar, MapPin, Wallet, ChevronDown, Crosshair } from "lucide-react";
+import {
+  Wand2,
+  Loader2,
+  FileText,
+  Sparkles,
+  CheckCircle2,
+  Circle,
+  Trash2,
+  Calendar,
+  MapPin,
+  Wallet,
+  ChevronDown,
+  Crosshair,
+  Pencil,
+  MoreVertical,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { STRATEGIC_TIER_OPTIONS, TIER_CONFIG } from "./JobCardItem";
@@ -28,9 +44,300 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
+function newEntityId() {
+  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function RoadmapStepBlock({
+  step,
+  index,
+  cardId,
+  roadmap,
+  activeStepIdx,
+  onSetRoadmap,
+  toggleCheck,
+  stepMenusPinned,
+}: {
+  step: RoadmapStep;
+  index: number;
+  cardId: string;
+  roadmap: RoadmapStep[];
+  activeStepIdx: number;
+  onSetRoadmap: (id: string, steps: RoadmapStep[]) => void;
+  toggleCheck: (stepId: string, itemId: string) => void;
+  stepMenusPinned: boolean;
+}) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(step.title);
+  const [editingSubstepId, setEditingSubstepId] = useState<string | null>(null);
+  const [subDraft, setSubDraft] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const subInputRef = useRef<HTMLInputElement>(null);
+
+  const active = index === activeStepIdx;
+  const done = step.checklist.length > 0 && step.checklist.every((c) => c.done);
+
+  useEffect(() => {
+    if (!isEditingTitle) setTitleDraft(step.title);
+  }, [step.title, isEditingTitle]);
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    }
+  }, [isEditingTitle]);
+
+  useEffect(() => {
+    if (editingSubstepId) {
+      queueMicrotask(() => subInputRef.current?.focus());
+    }
+  }, [editingSubstepId]);
+
+  const patchRoadmap = (next: RoadmapStep[]) => {
+    onSetRoadmap(cardId, next);
+  };
+
+  const commitTitle = () => {
+    const t = titleDraft.trim();
+    if (!t) {
+      setTitleDraft(step.title);
+      setIsEditingTitle(false);
+      return;
+    }
+    if (t !== step.title) {
+      patchRoadmap(roadmap.map((s) => (s.id === step.id ? { ...s, title: t } : s)));
+      notify.success("标题已更新");
+    }
+    setIsEditingTitle(false);
+  };
+
+  const deleteStep = () => {
+    patchRoadmap(roadmap.filter((s) => s.id !== step.id));
+    notify.success("已删除该步骤");
+  };
+
+  const addSubStep = () => {
+    const nid = newEntityId();
+    patchRoadmap(
+      roadmap.map((s) =>
+        s.id === step.id
+          ? { ...s, checklist: [...s.checklist, { id: nid, text: "新子步骤", done: false }] }
+          : s
+      )
+    );
+    notify.success("已添加子步骤");
+  };
+
+  const commitSubItem = (itemId: string) => {
+    if (editingSubstepId !== itemId) return;
+    const original = step.checklist.find((x) => x.id === itemId)?.text ?? "";
+    const t = subDraft.trim();
+    if (!t) {
+      setSubDraft(original);
+      setEditingSubstepId(null);
+      return;
+    }
+    if (t !== original) {
+      patchRoadmap(
+        roadmap.map((s) =>
+          s.id !== step.id
+            ? s
+            : { ...s, checklist: s.checklist.map((x) => (x.id === itemId ? { ...x, text: t } : x)) }
+        )
+      );
+      notify.success("子步骤已更新");
+    }
+    setEditingSubstepId(null);
+  };
+
+  const deleteSubItem = (itemId: string) => {
+    patchRoadmap(
+      roadmap.map((s) =>
+        s.id !== step.id ? s : { ...s, checklist: s.checklist.filter((x) => x.id !== itemId) }
+      )
+    );
+    if (editingSubstepId === itemId) setEditingSubstepId(null);
+    notify.success("已删除子步骤");
+  };
+
+  return (
+    <TimeLineItem
+      colorTheme="primary"
+      nodeKind={done ? "done" : active ? "active" : "idle"}
+      cardKind={active ? "emphasis" : done ? "done" : "subtle"}
+      cardClassName="group/step"
+      itemTransition={{ delay: index * 0.05 }}
+    >
+      <div className="flex items-baseline justify-between gap-2 min-w-0">
+        <div className="min-w-0 flex-1">
+          {isEditingTitle ? (
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={commitTitle}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commitTitle();
+                }
+                if (e.key === "Escape") {
+                  setTitleDraft(step.title);
+                  setIsEditingTitle(false);
+                }
+              }}
+              className="w-full min-w-0 bg-transparent border-b border-primary/35 text-sm font-semibold text-foreground outline-none focus-visible:border-primary/70 py-0.5"
+            />
+          ) : (
+            <h4 className="text-sm font-semibold text-foreground">{step.title}</h4>
+          )}
+        </div>
+        <div className="flex items-baseline gap-1.5 shrink-0">
+          {active && (
+            <span className="text-[10px] tracking-wider text-primary-glow font-mono font-semibold">
+              进行中
+            </span>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="步骤操作"
+                className={cn(
+                  "rounded p-0.5 outline-none transition-opacity focus-visible:ring-1 focus-visible:ring-primary/40 cursor-pointer",
+                  "opacity-0 group-hover/step:opacity-100",
+                  stepMenusPinned && "opacity-100"
+                )}
+              >
+                <MoreVertical className="w-4 h-4 text-slate-500 hover:text-slate-200" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass-strong border-white/10 min-w-[140px]">
+              <DropdownMenuItem
+                className="text-[13px] cursor-pointer"
+                onSelect={() => setIsEditingTitle(true)}
+              >
+                重命名
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-[13px] text-destructive focus:text-destructive cursor-pointer"
+                onSelect={deleteStep}
+              >
+                删除
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-border/60" />
+              <DropdownMenuItem className="text-[13px] cursor-pointer" onSelect={addSubStep}>
+                添加子步骤
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+      <p className="text-xs text-foreground/70 mt-1 leading-relaxed">{step.description}</p>
+      {step.checklist.length > 0 && (
+        <ul className="mt-2.5 space-y-1.5">
+          {step.checklist.map((c) => (
+            <li key={c.id}>
+              <div className="group/subitem flex w-full min-w-0 items-start gap-1.5 text-[13px]">
+                {editingSubstepId === c.id ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => toggleCheck(step.id, c.id)}
+                      className="shrink-0 mt-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
+                    >
+                      {c.done ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                      ) : (
+                        <Circle className="h-3.5 w-3.5 text-muted-foreground group-hover/subitem:text-foreground" />
+                      )}
+                    </button>
+                    <input
+                      ref={subInputRef}
+                      type="text"
+                      value={subDraft}
+                      onChange={(e) => setSubDraft(e.target.value)}
+                      onBlur={() => commitSubItem(c.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          commitSubItem(c.id);
+                        }
+                        if (e.key === "Escape") {
+                          setSubDraft(c.text);
+                          setEditingSubstepId(null);
+                        }
+                      }}
+                      className="bg-slate-800 text-slate-200 border border-slate-600 rounded px-2 py-0.5 text-sm flex-1 min-w-0 outline-none"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => toggleCheck(step.id, c.id)}
+                      className="flex min-w-0 flex-1 items-start gap-2 text-left leading-relaxed text-foreground/85 transition-colors hover:text-foreground"
+                    >
+                      {c.done ? (
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
+                      ) : (
+                        <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5 group-hover/subitem:text-foreground" />
+                      )}
+                      <span
+                        className={cn("min-w-0 flex-1", c.done && "line-through text-muted-foreground")}
+                      >
+                        {c.text}
+                      </span>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-0.5 pt-0.5 opacity-0 transition-opacity group-hover/subitem:opacity-100">
+                      <button
+                        type="button"
+                        aria-label="编辑子步骤"
+                        className="rounded p-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSubDraft(c.text);
+                          setEditingSubstepId(c.id);
+                        }}
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 cursor-pointer" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="删除子步骤"
+                        className="rounded p-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteSubItem(c.id);
+                        }}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 cursor-pointer" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </TimeLineItem>
+  );
+}
+
 export function CardDetailSheet({ card, onClose, onUpdate, onSetRoadmap, onDelete }: Props) {
   const [building, setBuilding] = useState(false);
   const [reflection, setReflection] = useState(card?.reflection ?? "");
+  const [stepwiseMenusPinned, setStepwiseMenusPinned] = useState(false);
+
+  useEffect(() => {
+    if (!card) return;
+    setStepwiseMenusPinned(false);
+  }, [card?.id]);
 
   if (!card) return null;
 
@@ -211,11 +518,23 @@ export function CardDetailSheet({ card, onClose, onUpdate, onSetRoadmap, onDelet
           )}
 
           <section>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-display font-semibold flex items-center gap-1.5">
-                <Sparkles className="h-3.5 w-3.5 text-primary-glow" /> Stepwise 路径拆解
-              </h3>
-              <Button size="sm" variant="outline" onClick={handleBuild} disabled={building} className="h-7 text-xs">
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
+                <h3 className="text-sm font-display font-semibold flex items-center gap-1.5 shrink-0">
+                  <Sparkles className="h-3.5 w-3.5 text-primary-glow" /> Stepwise 路径拆解
+                </h3>
+                {card.roadmap.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStepwiseMenusPinned((p) => !p)}
+                    className="inline-flex items-center gap-0.5 text-xs text-slate-500 hover:text-slate-200 cursor-pointer shrink-0"
+                  >
+                    <Pencil className="h-3 w-3" aria-hidden />
+                    编辑拆解
+                  </button>
+                )}
+              </div>
+              <Button size="sm" variant="outline" onClick={handleBuild} disabled={building} className="h-7 text-xs shrink-0">
                 {building ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Wand2 className="h-3 w-3 mr-1" /> {card.roadmap.length ? "重新生成" : "AI 生成"}</>}
               </Button>
             </div>
@@ -228,53 +547,44 @@ export function CardDetailSheet({ card, onClose, onUpdate, onSetRoadmap, onDelet
                 </Button>
               </div>
             ) : (
-              <TimelineTrack colorTheme="primary">
-                {card.roadmap.map((step, i) => {
-                  const active = i === activeStepIdx;
-                  const done = step.checklist.length > 0 && step.checklist.every((c) => c.done);
-                  return (
-                    <TimeLineItem
+              <>
+                <TimelineTrack colorTheme="primary">
+                  {card.roadmap.map((step, i) => (
+                    <RoadmapStepBlock
                       key={step.id}
-                      colorTheme="primary"
-                      nodeKind={done ? "done" : active ? "active" : "idle"}
-                      cardKind={active ? "emphasis" : done ? "done" : "subtle"}
-                      itemTransition={{ delay: i * 0.05 }}
-                    >
-                      <div className="flex items-baseline justify-between gap-2">
-                        <h4 className="text-sm font-semibold text-foreground">{step.title}</h4>
-                        {active && (
-                          <span className="text-[10px] tracking-wider text-primary-glow font-mono font-semibold shrink-0">
-                            进行中
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-foreground/70 mt-1 leading-relaxed">{step.description}</p>
-                      {step.checklist.length > 0 && (
-                        <ul className="mt-2.5 space-y-1.5">
-                          {step.checklist.map((c) => (
-                            <li key={c.id}>
-                              <button
-                                type="button"
-                                onClick={() => toggleCheck(step.id, c.id)}
-                                className="w-full text-left flex items-start gap-2 text-[13px] hover:text-foreground transition-colors group leading-relaxed"
-                              >
-                                {c.done ? (
-                                  <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
-                                ) : (
-                                  <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5 group-hover:text-foreground" />
-                                )}
-                                <span className={cn("text-foreground/85", c.done && "line-through text-muted-foreground")}>
-                                  {c.text}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </TimeLineItem>
-                  );
-                })}
-              </TimelineTrack>
+                      step={step}
+                      index={i}
+                      cardId={card.id}
+                      roadmap={card.roadmap}
+                      activeStepIdx={activeStepIdx}
+                      onSetRoadmap={onSetRoadmap}
+                      toggleCheck={toggleCheck}
+                      stepMenusPinned={stepwiseMenusPinned}
+                    />
+                  ))}
+                </TimelineTrack>
+                <div className="pl-6 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newStep: RoadmapStep = {
+                        id: newEntityId(),
+                        title: "新步骤",
+                        description: "",
+                        checklist: [],
+                      };
+                      onSetRoadmap(card.id, [...card.roadmap, newStep]);
+                      notify.success("已添加步骤");
+                    }}
+                    className="w-full inline-flex items-center justify-start gap-1.5 text-sm text-slate-400 hover:text-slate-200 py-2 px-4 rounded-md bg-transparent border-dashed border border-slate-700/50 hover:border-slate-500"
+                  >
+                    <span className="text-base leading-none font-normal" aria-hidden>
+                      +
+                    </span>
+                    添加新步骤
+                  </button>
+                </div>
+              </>
             )}
           </section>
 

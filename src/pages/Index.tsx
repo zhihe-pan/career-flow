@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Sparkles, Search, Plus, Focus, Zap, Briefcase, Video, Trophy, Filter, LayoutDashboard, FileText, Calendar, PieChart, Settings, Menu, Users, UserCircle2 } from "lucide-react";
 import { differenceInHours } from "date-fns";
-import { getFocusUrgentAtIso } from "@/lib/cardTimeBadge";
+import { getFocusUrgentAtIso, getInterviewingSortTimestamp } from "@/lib/cardTimeBadge";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { ResumeVault } from "@/components/careerflow/ResumeVault";
@@ -86,7 +86,19 @@ const Index = () => {
     return { highlightedIds: highlighted, dimmedIds: dimmed };
   }, [cards, focusMode]);
 
-  const cardsByStage = (s: Stage) => filtered.filter((c) => c.stage === s);
+  /** 面试中：下一场越早的卡片越靠上；无排期的排在最后（与 CardTimeBadge 同源） */
+  const getCardsByStage = useMemo(() => {
+    return (stage: Stage) => {
+      const base = filtered.filter((c) => c.stage === stage);
+      if (stage !== "interviewing") return base;
+      return [...base].sort((a, b) => {
+        const ta = getInterviewingSortTimestamp(a);
+        const tb = getInterviewingSortTimestamp(b);
+        if (ta !== tb) return ta - tb;
+        return a.company.localeCompare(b.company, "zh-CN");
+      });
+    };
+  }, [filtered]);
 
   const onDragStart = (e: DragStartEvent) => setDragId(String(e.active.id));
   const onDragEnd = (e: DragEndEvent) => {
@@ -266,7 +278,7 @@ const Index = () => {
                         id={s.id}
                         label={s.label}
                         accent={s.accent}
-                        cards={cardsByStage(s.id)}
+                        cards={getCardsByStage(s.id)}
                         highlightedIds={highlightedIds}
                         dimmedIds={dimmedIds}
                         onCardClick={(c) => setActive(c)}

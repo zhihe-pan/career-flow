@@ -40,6 +40,8 @@ const checkboxInterview = cn(
 );
 
 const iconAction = "h-4 w-4 text-slate-500 hover:text-slate-200 cursor-pointer";
+const datetimeCalendarIconWhite =
+  "[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert";
 
 function isoToDatetimeLocalValue(iso: string): string {
   const d = new Date(iso);
@@ -160,7 +162,10 @@ function InterviewRoundItem({
                   setIsEditing(false);
                 }
               }}
-              className="h-7 w-full max-w-[200px] rounded-md border border-orange-500/30 bg-background/60 px-2 text-[11px] font-mono text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/50"
+              className={cn(
+                "h-7 w-full max-w-[200px] rounded-md border border-orange-500/30 bg-background/60 px-2 text-[11px] font-mono text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/50",
+                datetimeCalendarIconWhite
+              )}
             />
           ) : round.scheduledAt ? (
             <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
@@ -305,7 +310,10 @@ export function InterviewTimelineSection({ card, onUpdate }: Props) {
                 type="datetime-local"
                 value={datetimeLocal}
                 onChange={(e) => setDatetimeLocal(e.target.value)}
-                className="mt-1 h-9 text-xs bg-background/50 border-border/60"
+                className={cn(
+                  "mt-1 h-9 text-xs bg-background/50 border-border/60",
+                  datetimeCalendarIconWhite
+                )}
               />
             </div>
             <Button type="button" className="w-full h-9 bg-gradient-primary shadow-glow text-xs" onClick={handleAddRound}>

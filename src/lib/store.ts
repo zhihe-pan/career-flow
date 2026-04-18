@@ -59,6 +59,14 @@ const seed: JobCard[] = [
       { id: "4", title: "Offer 谈判", description: "薪资锚点与意向确认", checklist: [
         { id: "a", text: "调研同级别薪资区间", done: false },
       ]},
+      {
+        id: "5",
+        title: "算法与数据结构",
+        description: "链表、二叉树、排序算法",
+        checklist: [
+          { id: "algo-1", text: "美团、字节跳动高频考点归纳（周练 1 套）", done: false },
+        ],
+      },
     ],
   },
   {
@@ -101,7 +109,7 @@ const seed: JobCard[] = [
       {
         id: randomUUID(),
         name: "二面",
-        scheduledAt: new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString(),
+        scheduledAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
         status: "pending",
       },
     ],
