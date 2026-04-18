@@ -101,11 +101,11 @@ function InterviewRoundItem({
       itemTransition={{ delay: index * 0.04 }}
     >
       <div className="flex items-start justify-between gap-2">
-        <h4 className="text-sm font-semibold text-foreground leading-tight min-w-0">{round.name}</h4>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <h4 className="text-sm font-semibold text-foreground leading-tight shrink-0">{round.name}</h4>
           <span
             className={cn(
-              "text-[10px] font-medium px-1.5 py-0.5 rounded-full border leading-none",
+              "shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full border leading-none",
               pending
                 ? "bg-orange-500/15 text-orange-400 border-orange-500/35"
                 : "bg-muted/30 text-muted-foreground border-border/45"
@@ -113,32 +113,32 @@ function InterviewRoundItem({
           >
             {pending ? "待面试" : "已完成"}
           </span>
-          <div className="flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            <button
-              type="button"
-              className="rounded p-0.5 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/40"
-              aria-label="编辑时间"
-              onClick={(e) => {
-                e.stopPropagation();
-                setEditValue(round.scheduledAt ? isoToDatetimeLocalValue(round.scheduledAt) : "");
-                setIsEditing(true);
-              }}
-            >
-              <Pencil className={iconAction} />
-            </button>
-            <button
-              type="button"
-              className="rounded p-0.5 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/40"
-              aria-label="删除该轮"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(round.id);
-                toast.success(`已删除「${round.name}」`);
-              }}
-            >
-              <Trash2 className={iconAction} />
-            </button>
-          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          <button
+            type="button"
+            className="rounded p-0.5 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/40"
+            aria-label="编辑时间"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditValue(round.scheduledAt ? isoToDatetimeLocalValue(round.scheduledAt) : "");
+              setIsEditing(true);
+            }}
+          >
+            <Pencil className={iconAction} />
+          </button>
+          <button
+            type="button"
+            className="rounded p-0.5 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/40"
+            aria-label="删除该轮"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(round.id);
+              toast.success(`已删除「${round.name}」`);
+            }}
+          >
+            <Trash2 className={iconAction} />
+          </button>
         </div>
       </div>
       <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">

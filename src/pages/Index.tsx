@@ -270,6 +270,7 @@ const Index = () => {
                         highlightedIds={highlightedIds}
                         dimmedIds={dimmedIds}
                         onCardClick={(c) => setActive(c)}
+                        onAddCard={s.id === "backlog" ? () => setAdding(true) : undefined}
                       />
                     ))}
                   </div>
