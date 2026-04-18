@@ -27,7 +27,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Sonner />
-      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <BrowserRouter
+        basename={import.meta.env.BASE_URL === "/" ? undefined : import.meta.env.BASE_URL.replace(/\/$/, "")}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
         <AnimatedRoutes />
       </BrowserRouter>
     </TooltipProvider>

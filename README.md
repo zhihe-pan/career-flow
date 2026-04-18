@@ -103,6 +103,28 @@ supabase/            # Supabase 配置与 Edge Functions
 
 ---
 
+## GitHub Pages 部署
+
+本仓库名为 `CareerFlow`，对应站点根路径为 **`/CareerFlow/`**，公开地址为：
+
+**<https://zhihe-pan.github.io/CareerFlow/>**
+
+### 一次性设置（在 GitHub 网页上）
+
+1. 打开仓库 **Settings → Pages**。  
+2. **Build and deployment** 里 **Source** 选择 **GitHub Actions**（不要选 Deploy from a branch）。  
+3. 保存后，把默认分支的代码推送到 `main`，工作流 **Deploy to GitHub Pages** 会自动构建并发布。
+
+### 构建说明
+
+- 工作流使用 `npm run build -- --base=/CareerFlow/`，与 GitHub Pages 子路径一致。  
+- 本地开发仍使用默认根路径 `npm run dev`，无需加 `base`。  
+- 路由已通过 `BrowserRouter` 的 `basename` 与 `import.meta.env.BASE_URL` 对齐子路径。
+
+若你 Fork 后仓库名不是 `CareerFlow`，请同时修改工作流里的 `--base=/你的仓库名/` 以及 Pages 文档中的 URL。
+
+---
+
 ## 参与贡献
 
 欢迎 Issue 与 Pull Request：先 Fork 本仓库，在分支上开发并尽量保持提交信息清晰可读。
