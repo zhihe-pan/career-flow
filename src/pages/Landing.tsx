@@ -89,7 +89,7 @@ const Landing = () => {
           >
             {/* Shimmer sweep on hover */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/12 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700 ease-in-out" />
-            <span className="tracking-wide relative z-10">开启我的通关之旅</span>
+            <span className="tracking-wide relative z-10">开启你的求职之旅</span>
             <ChevronRight className="h-5 w-5 bg-white/15 rounded-full p-0.5 relative z-10 group-hover:translate-x-1 transition-transform duration-300" />
           </Button>
         </motion.div>

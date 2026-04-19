@@ -139,6 +139,10 @@ function EditableField({
   );
 }
 
+const iconAction = "h-4 w-4 text-slate-500 hover:text-slate-200 cursor-pointer";
+const datetimeCalendarIconWhite =
+  "[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:ml-auto";
+
 function RoadmapStepBlock({
   step,
   index,
@@ -160,9 +164,12 @@ function RoadmapStepBlock({
 }) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(step.title);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [descriptionDraft, setDescriptionDraft] = useState(step.description);
   const [editingSubstepId, setEditingSubstepId] = useState<string | null>(null);
   const [subDraft, setSubDraft] = useState("");
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
   const subInputRef = useRef<HTMLInputElement>(null);
 
   const active = index === activeStepIdx;
@@ -177,7 +184,11 @@ function RoadmapStepBlock({
       titleInputRef.current?.focus();
       titleInputRef.current?.select();
     }
-  }, [isEditingTitle]);
+    if (isEditingDescription) {
+      descriptionInputRef.current?.focus();
+      descriptionInputRef.current?.select();
+    }
+  }, [isEditingDescription]);
 
   useEffect(() => {
     if (editingSubstepId) {
@@ -201,6 +212,15 @@ function RoadmapStepBlock({
       notify.success("标题已更新");
     }
     setIsEditingTitle(false);
+  };
+
+  const commitDescription = () => {
+    const d = descriptionDraft.trim();
+    if (d !== step.description) {
+      patchRoadmap(roadmap.map((s) => (s.id === step.id ? { ...s, description: d } : s)));
+      notify.success("描述已更新");
+    }
+    setIsEditingDescription(false);
   };
 
   const deleteStep = () => {
@@ -282,7 +302,12 @@ function RoadmapStepBlock({
               className="w-full min-w-0 bg-transparent border-b border-primary/35 text-sm font-semibold text-foreground outline-none focus-visible:border-primary/70 py-0.5"
             />
           ) : (
-            <h4 className="text-sm font-semibold text-foreground">{step.title}</h4>
+            <h4 
+              className="text-sm font-semibold text-foreground cursor-pointer hover:text-primary-glow transition-colors"
+              onClick={() => setIsEditingTitle(true)}
+            >
+              {step.title}
+            </h4>
           )}
         </div>
         <div className="flex items-baseline gap-1.5 shrink-0">
@@ -326,7 +351,32 @@ function RoadmapStepBlock({
           </DropdownMenu>
         </div>
       </div>
-      <p className="text-xs text-foreground/70 mt-1 leading-relaxed">{step.description}</p>
+      {isEditingDescription ? (
+        <textarea
+          ref={descriptionInputRef}
+          value={descriptionDraft}
+          onChange={(e) => setDescriptionDraft(e.target.value)}
+          onBlur={commitDescription}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              commitDescription();
+            }
+            if (e.key === "Escape") {
+              setDescriptionDraft(step.description);
+              setIsEditingDescription(false);
+            }
+          }}
+          className="w-full mt-1 bg-background/50 border border-primary/30 rounded px-2 py-1 text-xs text-foreground/90 outline-none focus:border-primary/60 transition-colors resize-none leading-relaxed"
+        />
+      ) : (
+        <p 
+          className="text-xs text-foreground/70 mt-1 leading-relaxed cursor-pointer hover:text-foreground/90 transition-colors"
+          onClick={() => setIsEditingDescription(true)}
+        >
+          {step.description || "点击添加描述..."}
+        </p>
+      )}
       {step.checklist.length > 0 && (
         <ul className="mt-2.5 space-y-1.5">
           {step.checklist.map((c) => (
@@ -369,32 +419,27 @@ function RoadmapStepBlock({
                     <button
                       type="button"
                       onClick={() => toggleCheck(step.id, c.id)}
-                      className="flex min-w-0 flex-1 items-start gap-2 text-left leading-relaxed text-foreground/85 transition-colors hover:text-foreground"
+                      className="shrink-0 mt-0.5 rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
                     >
                       {c.done ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                       ) : (
-                        <Circle className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5 group-hover/subitem:text-foreground" />
+                        <Circle className="h-3.5 w-3.5 text-muted-foreground group-hover/subitem:text-foreground" />
                       )}
-                      <span
-                        className={cn("min-w-0 flex-1", c.done && "line-through text-muted-foreground")}
-                      >
-                        {c.text}
-                      </span>
                     </button>
+                    <span
+                      onClick={() => {
+                        setSubDraft(c.text);
+                        setEditingSubstepId(c.id);
+                      }}
+                      className={cn(
+                        "min-w-0 flex-1 cursor-pointer hover:text-foreground transition-colors",
+                        c.done && "line-through text-muted-foreground"
+                      )}
+                    >
+                      {c.text}
+                    </span>
                     <div className="flex shrink-0 items-center gap-0.5 pt-0.5 opacity-0 transition-opacity group-hover/subitem:opacity-100">
-                      <button
-                        type="button"
-                        aria-label="编辑子步骤"
-                        className="rounded p-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/30"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSubDraft(c.text);
-                          setEditingSubstepId(c.id);
-                        }}
-                      >
-                        <Pencil className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 cursor-pointer" />
-                      </button>
                       <button
                         type="button"
                         aria-label="删除子步骤"
@@ -483,8 +528,6 @@ export function CardDetailSheet({ card, onClose, onUpdate, onSetRoadmap, onDelet
         <SheetDescription className="sr-only">查看并编辑职位的详细信息、面试进度与行动清单。</SheetDescription>
         <div className="p-6 border-b border-border/40 bg-gradient-to-br from-primary/15 via-transparent to-accent/10">
           <SheetHeader>
-            <SheetTitle className="sr-only">岗位详情</SheetTitle>
-            <div className="sr-only">查看并编辑职位的详细信息、面试进度与行动清单。</div>
             <EditableField
               value={card.company}
               onSave={(v) => onUpdate(card.id, { company: v })}
@@ -528,7 +571,7 @@ export function CardDetailSheet({ card, onClose, onUpdate, onSetRoadmap, onDelet
                       !card.strategicTier && "text-muted-foreground"
                     )}
                   >
-                    {card.strategicTier ? (
+                    {card.strategicTier && TIER_CONFIG[card.strategicTier] ? (
                       <>
                         <span>{TIER_CONFIG[card.strategicTier].icon}</span>
                         <span>{TIER_CONFIG[card.strategicTier].label}</span>
@@ -603,7 +646,7 @@ export function CardDetailSheet({ card, onClose, onUpdate, onSetRoadmap, onDelet
                   onUpdate(card.id, { deadline: v });
                 }
               }}
-              className="mt-1 bg-background/40 border-border/60 text-xs h-8 max-w-[240px]"
+              className={cn("mt-1 bg-background/50 border-white/10 text-xs h-9", datetimeCalendarIconWhite)}
             />
           </div>
           {(card.stage === "interviewing" || card.stage === "written_test") && (
@@ -638,16 +681,6 @@ export function CardDetailSheet({ card, onClose, onUpdate, onSetRoadmap, onDelet
                 <h3 className="text-sm font-display font-semibold flex items-center gap-1.5 shrink-0">
                   <Sparkles className="h-3.5 w-3.5 text-primary-glow" /> Stepwise 路径拆解
                 </h3>
-                {card.roadmap.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setStepwiseMenusPinned((p) => !p)}
-                    className="inline-flex items-center gap-0.5 text-xs text-slate-500 hover:text-slate-200 cursor-pointer shrink-0"
-                  >
-                    <Pencil className="h-3 w-3" aria-hidden />
-                    编辑拆解
-                  </button>
-                )}
               </div>
               <Button size="sm" variant="outline" onClick={handleBuild} disabled={building} className="h-7 text-xs shrink-0">
                 {building ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Wand2 className="h-3 w-3 mr-1" /> {card.roadmap.length ? "重新生成" : "AI 生成"}</>}
@@ -691,7 +724,7 @@ export function CardDetailSheet({ card, onClose, onUpdate, onSetRoadmap, onDelet
                       onSetRoadmap(card.id, [...card.roadmap, newStep]);
                       notify.success("已添加步骤");
                     }}
-                    className="w-full inline-flex items-center justify-start gap-1.5 text-sm text-slate-400 hover:text-slate-200 py-2 px-4 rounded-md bg-transparent border-dashed border border-slate-700/50 hover:border-slate-500"
+                    className="w-full inline-flex items-center justify-start gap-1.5 text-xs text-slate-400 hover:text-slate-200 py-2 px-4 rounded-md bg-transparent border-dashed border border-slate-700/50 hover:border-slate-500"
                   >
                     <span className="text-base leading-none font-normal" aria-hidden>
                       +

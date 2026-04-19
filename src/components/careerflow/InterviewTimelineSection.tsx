@@ -21,7 +21,7 @@ import {
   deriveProgressStatusFromRounds,
   sortInterviewRounds,
 } from "@/lib/interviewRounds";
-import { Clock, Pencil, Plus, Trash2 } from "lucide-react";
+import { Clock, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { TimelineTrack, TimeLineItem } from "./TimeLineItem";
 
@@ -120,18 +120,6 @@ function InterviewRoundItem({
           <button
             type="button"
             className="rounded p-0.5 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/40"
-            aria-label="编辑时间"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditValue(round.scheduledAt ? isoToDatetimeLocalValue(round.scheduledAt) : "");
-              setIsEditing(true);
-            }}
-          >
-            <Pencil className={iconAction} />
-          </button>
-          <button
-            type="button"
-            className="rounded p-0.5 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-orange-400/40"
             aria-label="删除该轮"
             onClick={(e) => {
               e.stopPropagation();
@@ -168,11 +156,19 @@ function InterviewRoundItem({
               )}
             />
           ) : round.scheduledAt ? (
-            <p className="text-[11px] text-muted-foreground font-mono tabular-nums">
+            <p 
+              className="text-[11px] text-muted-foreground font-mono tabular-nums cursor-pointer hover:text-orange-400 transition-colors"
+              onClick={() => setIsEditing(true)}
+            >
               {format(new Date(round.scheduledAt), "yyyy/M/d HH:mm", { locale: zhCN })}
             </p>
           ) : (
-            <p className="text-[11px] text-muted-foreground">未设置时间</p>
+            <p 
+              className="text-[11px] text-muted-foreground cursor-pointer hover:text-orange-400 transition-colors italic"
+              onClick={() => setIsEditing(true)}
+            >
+              未设置时间
+            </p>
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">

@@ -42,7 +42,7 @@ export function KanbanColumn({ id, label, accent, cards, highlightedIds, dimmedI
           <button
             type="button"
             onClick={onAddCard}
-            className="mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-indigo-500/30 bg-indigo-500/5 py-3 text-sm font-medium text-indigo-400 transition-all duration-300 hover:border-indigo-500/60 hover:bg-indigo-500/15 hover:text-indigo-300"
+            className="mb-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-indigo-500/30 bg-indigo-500/5 py-3 text-[11px] font-medium text-indigo-400 transition-all duration-300 hover:border-indigo-500/60 hover:bg-indigo-500/15 hover:text-indigo-300"
             aria-label="录入新机会"
           >
             <Plus className="h-4 w-4 shrink-0" aria-hidden />
